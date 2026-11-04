@@ -1,0 +1,378 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Booking {
+  id                    String                  @id
+  inquiryId             String                  @unique
+  quotationId           String                  @unique
+  organizationId        String
+  status                BookingStatus           @default(PENDING_CONFIRMATION)
+  currency              String                  @default("PHP")
+  agreedTotal           Decimal                 @db.Decimal(12, 2)
+  providerCost          Decimal                 @db.Decimal(12, 2)
+  commissionMethod      CommissionMethod?
+  commissionRate        Decimal?                @db.Decimal(8, 4)
+  commissionAmount      Decimal?                @db.Decimal(12, 2)
+  confirmedAt           DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  internalNotes         String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  Inquiry               Inquiry                 @relation(fields: [inquiryId], references: [id])
+  Organization          Organization            @relation(fields: [organizationId], references: [id])
+  Quotation             Quotation               @relation(fields: [quotationId], references: [id])
+  CommissionLedgerEntry CommissionLedgerEntry[]
+
+  @@index([organizationId, status])
+  @@index([status, createdAt])
+}
+
+model CommissionAgreement {
+  id             String           @id
+  organizationId String
+  method         CommissionMethod
+  rate           Decimal?         @db.Decimal(8, 4)
+  fixedAmount    Decimal?         @db.Decimal(12, 2)
+  currency       String           @default("PHP")
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  isActive       Boolean          @default(true)
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  Organization   Organization     @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, isActive, effectiveFrom])
+}
+
+model CommissionLedgerEntry {
+  id             String           @id
+  bookingId      String
+  organizationId String
+  amount         Decimal          @db.Decimal(12, 2)
+  currency       String           @default("PHP")
+  status         CommissionStatus @default(DUE)
+  description    String?
+  paidAt         DateTime?
+  reversedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  Booking        Booking          @relation(fields: [bookingId], references: [id])
+  Organization   Organization     @relation(fields: [organizationId], references: [id])
+
+  @@index([bookingId, status])
+  @@index([organizationId, status])
+}
+
+model GuestItinerary {
+  id                 String               @id
+  inquiryId          String               @unique
+  templateId         String?
+  name               String
+  durationDays       Int                  @default(1)
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  Inquiry            Inquiry              @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  ItineraryTemplate  ItineraryTemplate?   @relation(fields: [templateId], references: [id])
+  GuestItineraryStop GuestItineraryStop[]
+}
+
+model GuestItineraryStop {
+  id               String         @id
+  guestItineraryId String
+  dayNumber        Int            @default(1)
+  sortOrder        Int            @default(0)
+  name             String
+  description      String?
+  location         String?
+  durationMinutes  Int?
+  GuestItinerary   GuestItinerary @relation(fields: [guestItineraryId], references: [id], onDelete: Cascade)
+
+  @@index([guestItineraryId, dayNumber, sortOrder])
+}
+
+model Inquiry {
+  id                                String          @id
+  customerId                        String?
+  assignedOrganizationId            String?
+  assignedUserId                    String?
+  guestName                         String
+  guestEmail                        String
+  guestPhone                        String?
+  startDate                         DateTime?
+  endDate                           DateTime?
+  guestCount                        Int             @default(1)
+  pickupLocation                    String?
+  specialRequests                   String?
+  internalNotes                     String?
+  status                            InquiryStatus   @default(NEW)
+  createdAt                         DateTime        @default(now())
+  updatedAt                         DateTime
+  tourId                            String?
+  Booking                           Booking?
+  GuestItinerary                    GuestItinerary?
+  Organization                      Organization?   @relation(fields: [assignedOrganizationId], references: [id], onDelete: Restrict)
+  User_Inquiry_assignedUserIdToUser User?           @relation("Inquiry_assignedUserIdToUser", fields: [assignedUserId], references: [id])
+  User_Inquiry_customerIdToUser     User?           @relation("Inquiry_customerIdToUser", fields: [customerId], references: [id])
+  Tour                              Tour?           @relation(fields: [tourId], references: [id])
+  ProviderQuote                     ProviderQuote[]
+  Quotation                         Quotation[]
+
+  @@index([assignedOrganizationId, status])
+  @@index([guestEmail])
+  @@index([status, createdAt])
+  @@index([tourId])
+}
+
+model ItineraryTemplate {
+  id                    String                  @id
+  organizationId        String?
+  name                  String
+  description           String?
+  durationDays          Int                     @default(1)
+  status                ItineraryStatus         @default(DRAFT)
+  isFeatured            Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  GuestItinerary        GuestItinerary[]
+  Organization          Organization?           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  ItineraryTemplateStop ItineraryTemplateStop[]
+  Tour                  Tour[]
+
+  @@index([organizationId])
+  @@index([status, isFeatured])
+}
+
+model ItineraryTemplateStop {
+  id                String            @id
+  templateId        String
+  dayNumber         Int               @default(1)
+  sortOrder         Int               @default(0)
+  name              String
+  description       String?
+  location          String?
+  durationMinutes   Int?
+  ItineraryTemplate ItineraryTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, dayNumber, sortOrder])
+}
+
+model Organization {
+  id                    String                  @id
+  name                  String
+  slug                  String                  @unique
+  type                  OrganizationType
+  status                OrganizationStatus      @default(PENDING)
+  description           String?
+  email                 String?
+  phone                 String?
+  address               String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  Booking               Booking[]
+  CommissionAgreement   CommissionAgreement[]
+  CommissionLedgerEntry CommissionLedgerEntry[]
+  Inquiry               Inquiry[]
+  ItineraryTemplate     ItineraryTemplate[]
+  OrganizationMember    OrganizationMember[]
+  ProviderQuote         ProviderQuote[]
+  Tour                  Tour[]
+}
+
+model OrganizationMember {
+  id             String       @id
+  userId         String
+  organizationId String
+  role           MemberRole   @default(STAFF)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  Organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, role])
+}
+
+model ProviderQuote {
+  id             String              @id
+  inquiryId      String
+  organizationId String
+  status         ProviderQuoteStatus @default(REQUESTED)
+  providerCost   Decimal?            @db.Decimal(12, 2)
+  currency       String              @default("PHP")
+  validUntil     DateTime?
+  notes          String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime
+  Inquiry        Inquiry             @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  Organization   Organization        @relation(fields: [organizationId], references: [id])
+
+  @@index([inquiryId, status])
+  @@index([organizationId, status])
+}
+
+model Quotation {
+  id            String          @id
+  inquiryId     String
+  version       Int
+  status        QuotationStatus @default(DRAFT)
+  sellingTotal  Decimal         @db.Decimal(12, 2)
+  currency      String          @default("PHP")
+  validUntil    DateTime?
+  terms         String?
+  sentAt        DateTime?
+  acceptedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  Booking       Booking?
+  Inquiry       Inquiry         @relation(fields: [inquiryId], references: [id])
+  QuotationItem QuotationItem[]
+
+  @@unique([inquiryId, version])
+  @@index([status, validUntil])
+}
+
+model QuotationItem {
+  id          String    @id
+  quotationId String
+  description String
+  quantity    Decimal   @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal   @db.Decimal(12, 2)
+  lineTotal   Decimal   @db.Decimal(12, 2)
+  Quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+}
+
+model Tour {
+  id                         String             @id
+  organizationId             String
+  title                      String
+  slug                       String
+  description                String?
+  currency                   String             @default("PHP")
+  priceBasis                 PriceBasis         @default(CUSTOM_QUOTE)
+  basePrice                  Decimal?           @db.Decimal(12, 2)
+  durationDays               Int                @default(1)
+  status                     TourStatus         @default(DRAFT)
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime
+  defaultItineraryTemplateId String?
+  Inquiry                    Inquiry[]
+  ItineraryTemplate          ItineraryTemplate? @relation(fields: [defaultItineraryTemplateId], references: [id])
+  Organization               Organization       @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, slug])
+  @@index([defaultItineraryTemplateId])
+  @@index([status, title])
+}
+
+model User {
+  id                                   String               @id
+  name                                 String
+  email                                String               @unique
+  passwordHash                         String
+  phone                                String?
+  status                               UserStatus           @default(ACTIVE)
+  createdAt                            DateTime             @default(now())
+  updatedAt                            DateTime
+  Inquiry_Inquiry_assignedUserIdToUser Inquiry[]            @relation("Inquiry_assignedUserIdToUser")
+  Inquiry_Inquiry_customerIdToUser     Inquiry[]            @relation("Inquiry_customerIdToUser")
+  OrganizationMember                   OrganizationMember[]
+}
+
+enum BookingStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum CommissionMethod {
+  PERCENTAGE
+  FIXED_PER_BOOKING
+  NET_RATE
+}
+
+enum CommissionStatus {
+  DUE
+  PAID
+  REVERSED
+}
+
+enum InquiryStatus {
+  NEW
+  REVIEWING
+  PROVIDER_ASSIGNED
+  QUOTED
+  ACCEPTED
+  LOST
+  CANCELLED
+}
+
+enum ItineraryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum OrganizationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrganizationType {
+  TOUR_OPERATOR
+  ACCOMMODATION_PROVIDER
+  BOTH
+}
+
+enum PriceBasis {
+  PER_PERSON
+  PER_GROUP
+  CUSTOM_QUOTE
+}
+
+enum ProviderQuoteStatus {
+  REQUESTED
+  RECEIVED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+enum TourStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
