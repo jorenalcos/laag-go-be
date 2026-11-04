@@ -5,7 +5,10 @@ import adminRoutes from "../modules/auth/admin.routes";
 import tourRoutes from "../modules/tours/tour.routes";
 import publicTourRoutes from "../modules/tours/public-tour.routes";
 import itineraryRoutes from "../modules/itineraries/itinerary.routes";
-
+import {
+  inquiryRoutes,
+  publicInquiryRoutes,
+} from "../modules/inquiries/inquiry.routes";
 const router = Router();
 
 router.get("/health", (_req, res) => {
@@ -23,5 +26,8 @@ router.use("/tours", tourRoutes);
 router.use("/public/tours", publicTourRoutes);
 
 router.use("/itineraries", itineraryRoutes);
+
+router.use("/public/inquiries", publicInquiryRoutes);
+router.use("/inquiries", inquiryRoutes);
 
 export default router;
