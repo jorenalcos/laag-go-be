@@ -4,6 +4,7 @@ import authRoutes from "../modules/auth/auth.routes";
 import adminRoutes from "../modules/auth/admin.routes";
 import tourRoutes from "../modules/tours/tour.routes";
 import publicTourRoutes from "../modules/tours/public-tour.routes";
+import itineraryRoutes from "../modules/itineraries/itinerary.routes";
 
 const router = Router();
 
@@ -20,5 +21,7 @@ router.use("/admin", adminRoutes);
 
 router.use("/tours", tourRoutes);
 router.use("/public/tours", publicTourRoutes);
+
+router.use("/itineraries", itineraryRoutes);
 
 export default router;
