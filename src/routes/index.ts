@@ -9,6 +9,8 @@ import {
   inquiryRoutes,
   publicInquiryRoutes,
 } from "../modules/inquiries/inquiry.routes";
+import quotationRoutes from "../modules/quotations/quotation.routes";
+
 const router = Router();
 
 router.get("/health", (_req, res) => {
@@ -29,5 +31,7 @@ router.use("/itineraries", itineraryRoutes);
 
 router.use("/public/inquiries", publicInquiryRoutes);
 router.use("/inquiries", inquiryRoutes);
+
+router.use("/quotations", quotationRoutes);
 
 export default router;
