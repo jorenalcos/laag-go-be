@@ -5,11 +5,12 @@ import adminRoutes from "../modules/auth/admin.routes";
 import tourRoutes from "../modules/tours/tour.routes";
 import publicTourRoutes from "../modules/tours/public-tour.routes";
 import itineraryRoutes from "../modules/itineraries/itinerary.routes";
+import quotationRoutes from "../modules/quotations/quotation.routes";
+import bookingRoutes from "../modules/bookings/booking.routes";
 import {
   inquiryRoutes,
   publicInquiryRoutes,
 } from "../modules/inquiries/inquiry.routes";
-import quotationRoutes from "../modules/quotations/quotation.routes";
 
 const router = Router();
 
@@ -26,12 +27,10 @@ router.use("/admin", adminRoutes);
 
 router.use("/tours", tourRoutes);
 router.use("/public/tours", publicTourRoutes);
-
 router.use("/itineraries", itineraryRoutes);
-
 router.use("/public/inquiries", publicInquiryRoutes);
 router.use("/inquiries", inquiryRoutes);
-
 router.use("/quotations", quotationRoutes);
+router.use("/bookings", bookingRoutes);
 
 export default router;
