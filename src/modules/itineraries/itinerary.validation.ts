@@ -16,12 +16,21 @@ export const createItineraryStopSchema = z.object({
   durationMinutes: z.number().int().positive().max(100000).nullable().optional(),
 }).strict();
 
-export const updateItineraryStopSchema = createItineraryStopSchema
-  .partial()
+export const updateItineraryStopSchema = z
+  .object({
+    dayNumber: z.number().int().min(1).max(365).optional(),
+    sortOrder: z.number().int().min(0).optional(),
+    name: z.string().trim().min(2).max(160).optional(),
+    description: z.string().trim().max(3000).nullable().optional(),
+    location: z.string().trim().max(250).nullable().optional(),
+    durationMinutes: z.number().int().positive().max(100000).nullable().optional(),
+  })
   .strict()
   .refine(
     (data) => Object.keys(data).length > 0,
-    { message: "At least one stop field must be provided" }
+    {
+      message: "At least one stop field must be provided",
+    },
   );
 
 export const createItinerarySchema = z.object({
