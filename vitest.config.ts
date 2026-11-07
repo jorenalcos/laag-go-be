@@ -15,6 +15,7 @@ export default defineConfig({
         "src/modules/auth/**/*.ts",
         "src/middleware/auth.middleware.ts",
         "src/modules/tours/**/*.ts",
+        "tests/**/*.test.ts",
       ],
       exclude: [
         "src/modules/auth/*.routes.ts",
