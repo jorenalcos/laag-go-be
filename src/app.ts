@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
+import pinoHttp from "pino-http";
+import { logger } from "./lib/logger";
 
 import apiRoutes from "./routes";
 import { errorMiddleware } from "./middleware/error.middleware";
@@ -28,7 +29,7 @@ app.use(
 app.use(helmet());
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
+app.use(pinoHttp({ logger }));
 
 app.get("/", (_req, res) => {
   res.json({
