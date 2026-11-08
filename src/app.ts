@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import apiRoutes from "./routes";
 import { errorMiddleware } from "./middleware/error.middleware";
+import { apiRateLimiter } from "./middleware/rate-limit.middleware";
 
 const app = express();
 
@@ -24,7 +25,7 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use("/api/v1", apiRoutes);
+app.use("/api/v1", apiRateLimiter, apiRoutes);
 
 app.use(errorMiddleware);
 
